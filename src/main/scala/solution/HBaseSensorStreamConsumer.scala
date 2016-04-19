@@ -101,7 +101,7 @@ object HBaseSensorStreamConsumer extends Serializable {
         "org.apache.kafka.common.serialization.StringDeserializer",
       ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG ->
         "org.apache.kafka.common.serialization.StringDeserializer",
-      ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> "false",
+      ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> "true",
       "spark.kafka.poll.time" -> pollTimeout
     )
 
