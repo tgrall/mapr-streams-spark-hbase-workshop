@@ -38,7 +38,7 @@
 	      <h3>Installation</h3>
 
       <p>
-        For this lab we will use <a href="https://www.mapr.com/products/mapr-sandbox-hadoop" target="_workshop">MapR Hadoop Sandbox 5.1</a> (Virtual Machine) or a MapR Cluster deployed on the cloud. The MapR cluster contains all the necessary components : Apache Spark and Apache HBase/MapR-DB.
+        For this lab we will use <a href="https://www.mapr.com/products/mapr-sandbox-hadoop" target="_workshop">MapR Hadoop Sandbox 5.1</a> (Virtual Machine) or a MapR Cluster deployed on the cloud. The MapR cluster contains all the necessary components : Apache Kafka/MapR Streams, Apache Spark and Apache HBase/MapR-DB.
       </p>
 
       <p>
@@ -170,7 +170,7 @@ Note, that the volume of data is pretty small for this example, but it would wor
 
         <div>
           Log into your sandbox or cluster, with your userid and password mapr:
-          <code>ssh –p port user01@ipaddress </code>
+          <code>ssh user01@ipaddress –p port </code>
         </div>
 
         <br/><br/>
@@ -581,7 +581,7 @@ ssc.awaitTermination()
     <h4>Save data that will be captured by Spark</h4>
     <div>
       Using another terminal window login into your sandbox or cluster:
-      <pre>ssh –p port user01@ipaddress</pre>
+      <pre>ssh user01@ipaddress –p port</pre>
     </div>
 
     <div>
