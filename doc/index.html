@@ -49,25 +49,29 @@
               <p>
                 <pre>scp mapr-streams-spark-hbase-workshop-master.zip [username]@node-ip:/user/[username]/.  </pre>
               </p>
-              <br/>
           </li>
+          <li>Connect to your Sandbox/Cluster
+              <p>
+                  <pre>ssh user01@ipaddress –p port </pre>
+              </p>
+          </li>
+
 
           <li>Unzip <code>mapr-streams-spark-hbase-workshop-master.zip</code> in your Sandbox/Cluster
 
 <p>
+
 <pre>
-unzip mapr-streams-spark-hbase-workshop-master.zip
+  cd /user/$USER
+
+  unzip mapr-streams-spark-hbase-workshop-master.zip
 </pre>
 
 Copy the data into a new folder
 <pre>
-
-  cd /user/$USER
-
   mkdir data
 
   cp ./mapr-streams-spark-hbase-workshop-master/data/* ./data/
-
 </pre>
 
 <p>
@@ -111,9 +115,6 @@ Note, that the volume of data is pretty small for this example, but it would wor
 
 
 </p>
-
-
-
               </p>
               <br/>
           </li>
@@ -207,7 +208,7 @@ import org.apache.spark.util.StatCounter
 
 <pre>
 // load the data into a  new RDD, replace user01 with the proper path
-val textRDD = sc.textFile("/user/user01/data/sensordata.csv")
+val textRDD = sc.textFile("/user/<b>$USERID</b>/data/sensordata.csv")
 
 // Return the first element in this RDD
 textRDD.take(1)</pre>
@@ -220,7 +221,7 @@ textRDD.take(1)</pre>
 
       </div>
 
-     <br/><br/>
+     <br/>
      <h4>Transform the RDD into a new RDD</h4>
 
       <div>
@@ -233,7 +234,6 @@ textRDD.take(1)</pre>
             <li>Create a new function <code>parseSensor</code> that parse each line and create an instance of Sensor<br/></li>
             <li>Then use the RDD created above and apply the <code>map()</code> transformation, that will be applied to each element of textRDD to create the RDD of sensor objects.<br/></li>
           </ol>
-
 <pre>
 //define the schema using a case class
 case class Sensor(
@@ -374,7 +374,7 @@ keyStatsRDD.take(5).foreach(println)
     How can you create the DataFrame directly from the CSV file? <br/><br/>
     <div><button class="button" onclick="$('#lab02-sol-1').toggle();">Show/Hide Solution</button></div>
     <div id="lab02-sol-1" style="display:none;" >
-    <pre>val sensorDF= sc.textFile("/user/user01/spark-streaming-hbase-workshop/data/sensordata.csv").map(parseSensor).toDF()</pre>
+    <pre>val sensorDF= sc.textFile("/user/<b>$USERID</b>/spark-streaming-hbase-workshop/data/sensordata.csv").map(parseSensor).toDF()</pre>
     </div>
     <br/><br/>
   </li>
@@ -517,7 +517,7 @@ case class Sensor(
 
 val ssc = new StreamingContext(sc, Seconds(2))
 
-val linesDStream = ssc.textFileStream("/user/$USER/stream/")
+val linesDStream = ssc.textFileStream("/user/<b>$USERID</b>/stream/")
 
 linesDStream.print()
 </pre>
@@ -647,9 +647,9 @@ notion of stream to allow administrator to better manage permissions, retention 
 <p>
   Let's create a new stream and a new topic for the application: (replace user01 by your user)
 
-<pre>maprcli stream create -path /user/user01/pump -produceperm p -consumeperm p -topicperm p
+<pre>maprcli stream create -path /user/$USER/pump -produceperm p -consumeperm p -topicperm p
 
-maprcli stream topic create -path /user/user01/pump -topic sensor -partitions 3
+maprcli stream topic create -path /user/$USER/pump -topic sensor -partitions 3
 </pre>
 
 Here you create a named "pump" with public permissions (<code>-produceperm p -consumeperm p -topicperm p</code>);<br/>
@@ -698,13 +698,14 @@ The consumer will read the messages from the last offset user by this consumer g
 
 <p>
   On your laptop, in your IDE or from the command line , build the project using maven.
-<pre>mvn clean package</pre>
+<pre>
+  mvn clean package</pre>
 </p>
 
 <p>
 Copy the jar to your MapR cluster:
 <pre>
-  scp  ms-sparkstreaming-1.0.jar user01@ipaddress:/user/$USER/.
+  scp  target/ms-sparkstreaming-1.0.jar user01@ipaddress:/user/$USER/.
 
   // if you are using virtualbox:
   scp -P 2222 ms-sparkstreaming-1.0.jar user01@127.0.0.1:/user/user01/.
@@ -715,15 +716,9 @@ Copy the jar to your MapR cluster:
 <h3>Run the application</h3>
 <p>
 Open two terminal windows, with the same user $USER, and go to:
-<pre>cd /user/$USERs/</pre>
-</p>
-
-<p>
-In the one window, run the producer with the following command:
-
 <pre>
-java -cp ms-sparkstreaming-1.0.jar:`mapr classpath` solution.MyProducer /user/$USER/pump:sensor
-</pre>
+  ssh user01@ipaddress –p port
+  cd /user/$USER</pre>
 </p>
 
 <p>
@@ -734,6 +729,14 @@ java -cp ms-sparkstreaming-1.0.jar:`mapr classpath` solution.MyConsumer /user/$U
 </pre>
 </p>
 
+
+<p>
+In the one window, run the producer with the following command:
+
+<pre>
+java -cp ms-sparkstreaming-1.0.jar:`mapr classpath` solution.MyProducer /user/$USER/pump:sensor
+</pre>
+</p>
 
 <p>
   As you can see the producer sends the messages to the topic and it is automtically capture by the consumer.<br/>
@@ -933,8 +936,6 @@ hbase shell
 # Replace $USER by your user
 
 create '/user/$USER/db/sensor', {NAME=>'data'}, {NAME=>'alert'}, {NAME=>'stats'}
-
-
   </pre>
   </p>
 
@@ -945,9 +946,7 @@ create '/user/$USER/db/sensor', {NAME=>'data'}, {NAME=>'alert'}, {NAME=>'stats'}
   <p>
     Open a new terminal window on your cluster and run the following commands:
 
-
-  <pre>spark-submit --class solution.HBaseSensorStreamConsumer --master local[2] ms-sparkstreaming-1.0.jar /user/$USER/pump:sensor /user/$USER/db/sensor
-  </pre>
+  <pre>spark-submit --class solution.HBaseSensorStreamConsumer --master local[2] ms-sparkstreaming-1.0.jar /user/$USER/pump:sensor /user/$USER/db/sensor</pre>
   </p>
 
   <p>
@@ -967,12 +966,8 @@ get '/user/$USER/db/sensor', 'THERMALITO_3/14/14 9:59'
 get '/user/$USER/db/sensor', 'NANTAHALLA_3/13/14 2:05'
 
 scan '/user/$USER/db/sensor'
-
 </pre>
-
   </p>
-
-
 </section>
 
 
