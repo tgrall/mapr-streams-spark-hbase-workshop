@@ -182,7 +182,7 @@ Note, that the volume of data is pretty small for this example, but it would wor
 <pre>
  cd
 
- /opt/mapr/spark/spark-1.5.2/bin/spark-shell --master local
+ /opt/mapr/spark/spark-1.6.1/bin/spark-shell --master local
 </pre>
 
        </div>
@@ -374,7 +374,7 @@ keyStatsRDD.take(5).foreach(println)
     How can you create the DataFrame directly from the CSV file? <br/><br/>
     <div><button class="button" onclick="$('#lab02-sol-1').toggle();">Show/Hide Solution</button></div>
     <div id="lab02-sol-1" style="display:none;" >
-    <pre>val sensorDF= sc.textFile("/user/<b>$USERID</b>/spark-streaming-hbase-workshop/data/sensordata.csv").map(parseSensor).toDF()</pre>
+    <pre>val sensorDF= sc.textFile("/user/<b>$USERID</b>/mapr-streams-spark-hbase-workshop-master/data/sensordata.csv").map(parseSensor).toDF()</pre>
     </div>
     <br/><br/>
   </li>
@@ -647,15 +647,50 @@ notion of stream to allow administrator to better manage permissions, retention 
 <p>
   Let's create a new stream and a new topic for the application: (replace user01 by your user)
 
-<pre>maprcli stream create -path /user/$USER/pump -produceperm p -consumeperm p -topicperm p
+<pre>maprcli stream create -path /user/$USERID/pump -produceperm p -consumeperm p -topicperm p
 
-maprcli stream topic create -path /user/$USER/pump -topic sensor -partitions 3
+maprcli stream topic create -path /user/$USERID/pump -topic sensor
 </pre>
 
 Here you create a named "pump" with public permissions (<code>-produceperm p -consumeperm p -topicperm p</code>);<br/>
 and create a new topic "sensor" in the pump stream.
 
 </p>
+
+
+<h3>Produce and Consume messages using Apache Kafka tools</h3>
+
+<p>
+	You have now created the topic <code>pump</code>, before creating a Java application to send message and consume them with Spark, let's use Kafka tools to use the topic.
+</p>
+
+<p>
+	Open 2 news terminals, one for the "producer" the other for the "consumer" tool, and run the following commands:
+</p>
+
+Producer:
+<pre>
+/opt/mapr/kafka/kafka-0.9.0/bin/kafka-console-producer.sh --topic /user/$USERID/pump:sensor --broker-list this.will.be.ignored:9092
+</pre>
+
+Consumer:
+<pre>
+/opt/mapr/kafka/kafka-0.9.0/bin/kafka-console-consumer.sh --topic /user/$USERID/pump:sensor --new-consumer --bootstrap-server this.will.be.ignored:9092
+</pre>
+
+<p>
+	In the producer terminal window, paste the following sensor <i>(a line from the CSV file)</i>:
+	<pre>BBKING,3/14/14,23:46,9.78,0.943,1088,0.24,88,1.86</pre>
+</p>
+
+<p>
+You can post as many messages as you want, or pipe the content of a file into the producer tools. 
+<br/><br/>
+Let's now create a Java application that produces messages and a Spark Streaming job that consumes the messages.
+</p>
+
+
+
 
 <h3>Create a producer</h3>
 
@@ -765,12 +800,12 @@ Spark has interesting Maven dependencies, included in this project to integrate 
   &lt;dependency&gt;
       &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
       &lt;artifactId&gt;spark-streaming-kafka-v09_2.10&lt;/artifactId&gt;
-      &lt;version&gt;1.5.2-mapr-1602&lt;/version&gt;
+      &lt;version&gt;1.6.1-mapr-1609&lt;/version&gt;
   &lt;/dependency&gt;
   &lt;dependency&gt;
       &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
       &lt;artifactId&gt;spark-streaming-kafka-producer_2.10&lt;/artifactId&gt;
-      &lt;version&gt;1.5.2-mapr-1602&lt;/version&gt;
+      &lt;version&gt;1.6.1-mapr-1609&lt;/version&gt;
   &lt;/dependency&gt;
 </pre>
 </p>

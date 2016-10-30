@@ -10,9 +10,9 @@
         <maven.compiler.target>1.7</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <scala.tools.version>2.10</scala.tools.version>
-        <scala.version>2.10.4</scala.version>
-        <spark.version>1.5.2</spark.version>
-        <mapr.version>1.1.1-mapr-1602-m7-5.1.0</mapr.version>
+        <scala.version>2.10.5</scala.version>
+        <spark.version>1.6.1</spark.version>
+        <mapr.version>1.1.1-mapr-1602-m7-5.2.0</mapr.version>
         <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>      
     </properties> 
     
@@ -71,17 +71,17 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-streaming-kafka-v09_2.10</artifactId>
-            <version>1.5.2-mapr-1602</version>          
+            <version>1.6.1-mapr-1609</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-streaming-kafka-producer_2.10</artifactId>
-            <version>1.5.2-mapr-1602</version>          
+            <version>1.6.1-mapr-1609</version>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>0.9.0.0-mapr-1602-streams-5.1.0</version>  
+            <version>0.9.0.0-mapr-1607-streams-5.2.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.zookeeper</groupId>
