@@ -38,7 +38,7 @@
 	      <h3>Installation</h3>
 
       <p>
-        For this lab we will use <a href="https://www.mapr.com/products/mapr-sandbox-hadoop" target="_workshop">MapR Hadoop Sandbox 5.1</a> (Virtual Machine) or a MapR Cluster deployed on the cloud. The MapR cluster contains all the necessary components : Apache Kafka/MapR Streams, Apache Spark and Apache HBase/MapR-DB.
+        For this lab we will use <a href="https://www.mapr.com/products/mapr-sandbox-hadoop" target="_workshop">MapR Hadoop Sandbox 5.2</a> (Virtual Machine) or a MapR Cluster deployed on the cloud. The MapR cluster contains all the necessary components : Apache Kafka/MapR Streams, Apache Spark and Apache HBase/MapR-DB.
       </p>
 
       <p>
@@ -52,8 +52,15 @@
           </li>
           <li>Connect to your Sandbox/Cluster
               <p>
-                  <pre>ssh user01@ipaddress –p port </pre>
+                if you are using Amazon cluster, use the following command:
+                  <pre>ssh [username]@node-ip</pre>
               </p>
+              <p>
+                <br/>
+                if you are using MapR sandbox use the following command:
+                <pre>ssh user01@localhost -p 2222</pre>
+              </p>
+              <br/>
           </li>
 
 
@@ -62,7 +69,7 @@
 <p>
 
 <pre>
-  cd /user/$USER
+  cd /user/$USERID
 
   unzip mapr-streams-spark-hbase-workshop-master.zip
 </pre>
@@ -130,6 +137,7 @@ Note, that the volume of data is pretty small for this example, but it would wor
         </ol>
       </p>
 
+      <!-- REMOVE IDE SECTION
       <h3>Download/Setup your IDE</h3>
 
       <p>
@@ -155,7 +163,7 @@ Note, that the volume of data is pretty small for this example, but it would wor
           <br/><br/>
       </li>
       </ul>
-
+       -->
 
 	  </section>
 
@@ -165,13 +173,13 @@ Note, that the volume of data is pretty small for this example, but it would wor
 
 
 
-
+    <hr/>
     <h1>Load and  Inspect data using the Spark Shell </h1>
 	  <section id="lab-01">
 
         <div>
           Log into your sandbox or cluster, with your userid and password mapr:
-          <code>ssh user01@ipaddress –p port </code>
+          <code>ssh user01@ipaddress </code>
         </div>
 
         <br/><br/>
@@ -182,7 +190,7 @@ Note, that the volume of data is pretty small for this example, but it would wor
 <pre>
  cd
 
- /opt/mapr/spark/spark-1.6.1/bin/spark-shell --master local
+ /opt/mapr/spark/spark-2.0.1/bin/spark-shell --master local
 </pre>
 
        </div>
@@ -207,7 +215,7 @@ import org.apache.spark.util.StatCounter
         Below we load the data from the csv file into a Resilient Distributed Dataset (RDD). RDDs can have transformations and actions;  the <code>take(1)</code> action returns the first element in the RDD.
 
 <pre>
-// load the data into a  new RDD, replace user01 with the proper path
+// load the data into a  new RDD, replace <b>$USERID</b> with the proper path
 val textRDD = sc.textFile("/user/<b>$USERID</b>/data/sensordata.csv")
 
 // Return the first element in this RDD
@@ -390,17 +398,33 @@ keyStatsRDD.take(5).foreach(println)
    </div>
 
 <pre>
+
+import org.apache.spark.sql.SparkSession
+
+// Create a spark SQL session; ideallu replace $USERID by your user
+val spark = SparkSession.builder().appName("Workshop $USERID").getOrCreate()
+
+// For implicit conversions like converting RDDs to DataFrames
+import spark.implicits._
+
 // group by the sensorid, date get average psi
 sensorDF.groupBy("resid", "date").agg(avg(sensorDF("psi"))).take(5).foreach(println)
 
+// Displays the content of the DataFrame to stdout
+sensorDF.show()
+
+// Display dataframe schema
+sensorStatDF.take(5).foreach(println)
+
 // register as a temp table then you can query
-sensorDF.registerTempTable("sensor")
+sensorDF.createOrReplaceTempView("sensor")
 
 // get the max , min, avg  for each column
-val sensorStatDF = sqlContext.sql("SELECT resid, date,MAX(hz) as maxhz, min(hz) as minhz, avg(hz) as avghz, MAX(disp) as maxdisp, min(disp) as mindisp, avg(disp) as avgdisp, MAX(flo) as maxflo, min(flo) as minflo, avg(flo) as avgflo,MAX(sedPPM) as maxsedPPM, min(sedPPM) as minsedPPM, avg(sedPPM) as avgsedPPM, MAX(psi) as maxpsi, min(psi) as minpsi, avg(psi) as avgpsi,MAX(chlPPM) as maxchlPPM, min(chlPPM) as minchlPPM, avg(chlPPM) as avgchlPPM FROM sensor GROUP BY resid,date")
+val sensorStatDF = spark.sql("SELECT resid, date,MAX(hz) as maxhz, min(hz) as minhz, avg(hz) as avghz, MAX(disp) as maxdisp, min(disp) as mindisp, avg(disp) as avgdisp, MAX(flo) as maxflo, min(flo) as minflo, avg(flo) as avgflo,MAX(sedPPM) as maxsedPPM, min(sedPPM) as minsedPPM, avg(sedPPM) as avgsedPPM, MAX(psi) as maxpsi, min(psi) as minpsi, avg(psi) as avgpsi,MAX(chlPPM) as maxchlPPM, min(chlPPM) as minchlPPM, avg(chlPPM) as avgchlPPM FROM sensor GROUP BY resid,date")
 
 // print out the results
 sensorStatDF.take(5).foreach(println)
+
 </pre>
 <div>
   <br/><br/>
@@ -413,13 +437,24 @@ sensorStatDF.take(5).foreach(println)
   <h5>Questions:</h5>
 
   <ul>
+
     <li>
-      How can I ge tthe list of all sensor? (field <code>resid</code> - tips: apply distinct on select statement) <br/><br/>
+      How can you show the first 100 "psi" values? <br/><br/>
+      <div><button class="button" onclick="$('#lab02-sol-21').toggle();">Show/Hide Solution</button></div>
+      <div id="lab02-sol-21" style="display:none;" >
+      <pre>sensorDF.select("psi").show(100)</pre>
+      </div>
+      <br/><br/>
+    </li>
+
+
+    <li>
+      How can I get the list of all sensor? (field <code>resid</code> - tips: apply distinct on select statement) <br/><br/>
       <div><button class="button" onclick="$('#lab02-sol-2').toggle();">Show/Hide Solution</button></div>
       <div id="lab02-sol-2" style="display:none;" >
-      <pre>sensorDF.select("resid").distinct.foreach(println)</pre>
+      <pre>sensorDF.select("resid").distinct.foreach(r => println(r) )</pre>
       or
-      <pre>sqlContext.sql("SELECT DISTINCT(resid) FROM sensor").foreach(println)</pre>
+      <pre>spark.sql("SELECT DISTINCT(resid) FROM sensor").foreach(r => println(r) )</pre>
       </div>
       <br/><br/>
     </li>
@@ -471,7 +506,7 @@ sensorStatDF.take(5).foreach(println)
 
       <div>
         To launch the Interactive Shell for streaming, at the command line, run the following command, we need 2 threads for streaming:
-        <pre>spark-shell --master local[2]</pre>
+        <pre>/opt/mapr/spark/spark-2.0.1/bin/spark-shell --master local[2]</pre>
         <br/><br/>
       </div>
 
@@ -580,8 +615,8 @@ ssc.awaitTermination()
     <br/><br/>
     <h4>Save data that will be captured by Spark</h4>
     <div>
-      Using another terminal window login into your sandbox or cluster:
-      <pre>ssh user01@ipaddress –p port</pre>
+      Using another terminal window login into your cluster:
+      <pre>ssh [$userid]]@ipaddress</pre>
     </div>
 
     <div>
@@ -684,7 +719,7 @@ Consumer:
 </p>
 
 <p>
-You can post as many messages as you want, or pipe the content of a file into the producer tools. 
+You can post as many messages as you want, or pipe the content of a file into the producer tools.
 <br/><br/>
 Let's now create a Java application that produces messages and a Spark Streaming job that consumes the messages.
 </p>
@@ -799,13 +834,8 @@ Spark has interesting Maven dependencies, included in this project to integrate 
 <pre>
   &lt;dependency&gt;
       &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
-      &lt;artifactId&gt;spark-streaming-kafka-v09_2.10&lt;/artifactId&gt;
-      &lt;version&gt;1.6.1-mapr-1609&lt;/version&gt;
-  &lt;/dependency&gt;
-  &lt;dependency&gt;
-      &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
-      &lt;artifactId&gt;spark-streaming-kafka-producer_2.10&lt;/artifactId&gt;
-      &lt;version&gt;1.6.1-mapr-1609&lt;/version&gt;
+      &lt;artifactId&gt;spark-streaming-kafka-0-9_2.11&lt;/artifactId&gt;
+      &lt;version&gt;2.0.1-mapr-1611&lt;/version&gt;
   &lt;/dependency&gt;
 </pre>
 </p>
@@ -835,9 +865,12 @@ Spark has interesting Maven dependencies, included in this project to integrate 
 The application get the data as simple RDD, and then you can, like you have done with the shell convert the RDD into another one using the Sensor class.
 
 <pre>
-    val linesDStream = KafkaUtils.createDirectStream[String, String](ssc, kafkaParams, topicsSet)
+  val consumerStrategy = ConsumerStrategies.Subscribe[String, String](topicsSet, kafkaParams)
+  val linesDStream = KafkaUtils.createDirectStream[String, String](
+    ssc, LocationStrategies.PreferConsistent, consumerStrategy
+  )
 
-    val sensorDStream = linesDStream.map(_._2).map(parseSensor)
+  val sensorDStream = linesDStream.map(_.value()).map(parseSensor)
 </pre>
 
 This looks as follow:
@@ -850,7 +883,9 @@ This looks as follow:
   Open a new terminal window on your cluster and run the following command:
 
 <pre>
-  spark-submit --class solution.SensorStreamConsumer --master local[2] ms-sparkstreaming-1.0.jar /user/$USER/pump:sensor
+  /opt/mapr/spark/spark-2.0.1/bin/spark-submit \
+    --class solution.SensorStreamConsumer \
+    --master local[2] ms-sparkstreaming-1.0.jar /user/$USER/pump:sensor
 </pre>
 </p>
 
@@ -981,7 +1016,12 @@ create '/user/$USER/db/sensor', {NAME=>'data'}, {NAME=>'alert'}, {NAME=>'stats'}
   <p>
     Open a new terminal window on your cluster and run the following commands:
 
-  <pre>spark-submit --class solution.HBaseSensorStreamConsumer --master local[2] ms-sparkstreaming-1.0.jar /user/$USER/pump:sensor /user/$USER/db/sensor</pre>
+  <pre>
+/opt/mapr/spark/spark-2.0.1/bin/spark-submit \
+  --class solution.HBaseSensorStreamConsumer \
+  --master local[2] \
+  ms-sparkstreaming-1.0.jar /user/$USER/pump:sensor /user/$USER/db/sensor
+  </pre>
   </p>
 
   <p>

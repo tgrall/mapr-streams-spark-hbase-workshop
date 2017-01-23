@@ -12,7 +12,8 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.streaming.Seconds
 import org.apache.spark.streaming.StreamingContext
-import org.apache.spark.streaming.kafka.v09.KafkaUtils
+import org.apache.spark.streaming.kafka09.{LocationStrategies, KafkaUtils, ConsumerStrategies}
+
 
 object HBaseSensorStreamConsumer extends Serializable {
   final val cfDataBytes = Bytes.toBytes("data")
@@ -105,10 +106,13 @@ object HBaseSensorStreamConsumer extends Serializable {
       "spark.kafka.poll.time" -> pollTimeout
     )
 
-    // parse the lines of data into sensor objects  
-    val messages = KafkaUtils.createDirectStream[String, String](ssc, kafkaParams, topicsSet)
+    // parse the lines of data into sensor objects
+    val consumerStrategy = ConsumerStrategies.Subscribe[String, String](topicsSet, kafkaParams)
+    val messages = KafkaUtils.createDirectStream[String, String](
+      ssc, LocationStrategies.PreferConsistent, consumerStrategy
+    )
 
-    val sensorDStream = messages.map(_._2).map(Sensor.parseSensor)
+    val sensorDStream = messages.map(_.value()).map(Sensor.parseSensor)
 
     sensorDStream.print()
 

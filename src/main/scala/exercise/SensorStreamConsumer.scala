@@ -1,14 +1,10 @@
 package exercise
 
 import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.spark.streaming.kafka09.{LocationStrategies, KafkaUtils, ConsumerStrategies}
 import org.apache.spark.{ SparkConf, SparkContext }
-import org.apache.spark.SparkContext._
-import org.apache.spark.streaming._
 import org.apache.spark.streaming.dstream.{ DStream, InputDStream }
-import org.apache.spark.streaming.kafka.v09.KafkaUtils
 import org.apache.spark.streaming.{ Seconds, StreamingContext }
-import org.apache.spark.sql.functions.avg
 import org.apache.spark.sql.SQLContext
 
 object SensorStreamConsumer extends Serializable {
@@ -56,9 +52,12 @@ object SensorStreamConsumer extends Serializable {
       "spark.kafka.poll.time" -> pollTimeout
     )
 
-    val messages = KafkaUtils.createDirectStream[String, String](ssc, kafkaParams, topicsSet)
+    val consumerStrategy = ConsumerStrategies.Subscribe[String, String](topicsSet, kafkaParams)
+    val messages = KafkaUtils.createDirectStream[String, String](
+      ssc, LocationStrategies.PreferConsistent, consumerStrategy
+    )
 
-    val sensorDStream = messages.map(_._2).map(parseSensor)
+    val sensorDStream = messages.map(_.value()).map(parseSensor)
 
     sensorDStream.foreachRDD { rdd =>
 

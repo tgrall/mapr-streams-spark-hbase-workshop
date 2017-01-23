@@ -2,14 +2,14 @@ package solution
 
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.spark.streaming.kafka09.{LocationStrategies, ConsumerStrategies, KafkaUtils}
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.apache.spark.SparkContext._
 import org.apache.spark.streaming._
 import org.apache.spark.streaming.dstream.{ DStream, InputDStream }
-import org.apache.spark.streaming.kafka.v09.KafkaUtils
 import org.apache.spark.streaming.{ Seconds, StreamingContext }
 import org.apache.spark.sql.functions.avg
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SparkSession, SQLContext}
 
 object SensorStreamConsumer extends Serializable {
 
@@ -29,12 +29,13 @@ object SensorStreamConsumer extends Serializable {
       throw new IllegalArgumentException("You must specify the topic, for example /user/user01/pump:sensor ")
     }
 
+
     val topics: String = args(0)
     System.out.println("Subscribed to : " + topics)
 
 
     val brokers = "maprdemo:9092" // not needed for MapR Streams, needed for Kafka
-    val groupId = "sparkApplication"
+    val groupId = "spark-executor-sparkApplication"
     val batchInterval = "2"
     val pollTimeout = "1000"
 
@@ -51,13 +52,15 @@ object SensorStreamConsumer extends Serializable {
         "org.apache.kafka.common.serialization.StringDeserializer",
       ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG ->
         "org.apache.kafka.common.serialization.StringDeserializer",
-      ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> "true",
       "spark.kafka.poll.time" -> pollTimeout
     )
 
-    val linesDStream = KafkaUtils.createDirectStream[String, String](ssc, kafkaParams, topicsSet)
+    val consumerStrategy = ConsumerStrategies.Subscribe[String, String](topicsSet, kafkaParams)
+    val linesDStream = KafkaUtils.createDirectStream[String, String](
+      ssc, LocationStrategies.PreferConsistent, consumerStrategy
+    )
 
-    val sensorDStream = linesDStream.map(_._2).map(parseSensor)
+    val sensorDStream = linesDStream.map(_.value()).map(parseSensor)
 
     sensorDStream.foreachRDD { rdd =>
 
@@ -65,19 +68,19 @@ object SensorStreamConsumer extends Serializable {
       if (!rdd.isEmpty) {
         val count = rdd.count
         println("count received " + count)
-        val sqlContext = SQLContext.getOrCreate(rdd.sparkContext)
-        import sqlContext.implicits._
-        import org.apache.spark.sql.functions._
+
+        val sparkSession = SparkSession.builder().appName("SparkStreamingAndSQL").getOrCreate();
+        import sparkSession.implicits._
 
         val sensorDF = rdd.toDF()
         // Display the top 20 rows of DataFrame
         println("sensor data")
         sensorDF.show()
-        sensorDF.registerTempTable("sensor")
-        val res = sqlContext.sql("SELECT resid, date, count(resid) as total FROM sensor GROUP BY resid, date")
+        sensorDF.createOrReplaceTempView("sensor")
+        val res = sparkSession.sql("SELECT resid, date, count(resid) as total FROM sensor GROUP BY resid, date")
         println("sensor count ")
         res.show
-        val res2 = sqlContext.sql("SELECT resid, date, avg(psi) as avgpsi FROM sensor GROUP BY resid,date")
+        val res2 = sparkSession.sql("SELECT resid, date, avg(psi) as avgpsi FROM sensor GROUP BY resid,date")
         println("sensor psi average")
         res2.show
 
