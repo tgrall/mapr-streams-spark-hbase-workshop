@@ -14,7 +14,7 @@ import java.util.Properties;
 public class MyConsumer {
 
     // Declare a new consumer.
-    public static KafkaConsumer consumer;
+    private static KafkaConsumer<String,String> consumer;
 
     public static void main(String[] args) throws IOException {
         if (args.length < 1) {
@@ -26,7 +26,7 @@ public class MyConsumer {
 
         configureConsumer();
 
-        List<String> topics = new ArrayList<String>();
+        List<String> topics = new ArrayList<>();
         topics.add(topic);
         // Subscribe to the topic.
         consumer.subscribe(topics);
@@ -55,7 +55,7 @@ public class MyConsumer {
     }
 
     /* Set the value for configuration parameters.*/
-    public static void configureConsumer() {
+    private static void configureConsumer() {
         Properties props = new Properties();
         props.put("enable.auto.commit","true");
         props.put("group.id", "mapr-workshop");
@@ -65,7 +65,7 @@ public class MyConsumer {
         props.put("value.deserializer",
                 "org.apache.kafka.common.serialization.StringDeserializer");
 
-        consumer = new KafkaConsumer<String, String>(props);
+        consumer = new KafkaConsumer<>(props);
     }
 
 }
