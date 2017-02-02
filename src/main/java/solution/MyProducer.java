@@ -47,20 +47,14 @@ public class MyProducer {
     }
 
     /**
-     * Reads data from `./data/sensordata.csv`
-     *
-     * @return A BufferedReader for the sensor data
-     * @throws FileNotFoundException
-     */
-    private static BufferedReader sensorData() throws FileNotFoundException {
-        File file = new File("./data/sensordata.csv");
-        FileReader fr = new FileReader(file);
-        return new BufferedReader(fr);
-    }
-
-    /* Set the value for a configuration parameter.
-     This configuration parameter specifies which class
-     to use to serialize the value of each message.*/
+     * Set the value for a configuration parameter.
+     * This configuration parameter specifies which class
+     * to use to serialize the value of each message.
+     * You can find out more about the producer parameters at
+     * https://kafka.apache.org/documentation/#producerconfigs
+     * and
+     * https://kafka.apache.org/0100/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html
+     **/
     private static KafkaProducer<String, String> configureProducer() {
         Properties props = new Properties();
         props.put("key.serializer",
@@ -71,8 +65,11 @@ public class MyProducer {
         return new KafkaProducer<>(props);
     }
 
+    //Boilerplate
+
     /**
-     * Introduces a random delay when producing elements so everything doesn't arrive all bunched up at the same time.
+     * Introduces a random delay when producing elements so everything doesn't
+     * arrive all bunched up at the same time.
      *
      * @return a number of milliseconds between 0 and 300
      */
@@ -80,4 +77,15 @@ public class MyProducer {
         return (int) (Math.random() * MAX_DELAY);
     }
 
+    /**
+     * Reads data from `./data/sensordata.csv`
+     *
+     * @return A BufferedReader for the sensor data
+     * @throws FileNotFoundException
+     */
+    private static BufferedReader sensorData() throws FileNotFoundException {
+        File file = new File("./data/sensordata.csv");
+        FileReader fr = new FileReader(file);
+        return new BufferedReader(fr);
+    }
 }
