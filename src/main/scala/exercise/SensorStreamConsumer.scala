@@ -13,14 +13,15 @@ import org.apache.spark.sql.SQLContext
 
 object SensorStreamConsumer extends Serializable {
 
-  // schema for sensor data   
-  case class Sensor(resid: String, date: String, time: String, hz: Double, disp: Double, flo: Double, sedPPM: Double, psi: Double, chlPPM: Double) extends Serializable
+  // schema for sensor data
+  case class Sensor(resid: String, date: String, time: String, hz: Double, disp: Double, flo: Double, sedPPM: Double, psi: Double, chlPPM: Double)
 
   // function to parse line of sensor data into Sensor class
   def parseSensor(str: String): Sensor = {
     val p = str.split(",")
     Sensor(p(0), p(1), p(2), p(3).toDouble, p(4).toDouble, p(5).toDouble, p(6).toDouble, p(7).toDouble, p(8).toDouble)
   }
+
   val timeout = 10 // Terminate after N seconds
   val batchSeconds = 2 // Size of batch intervals
 
